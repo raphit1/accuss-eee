@@ -1,5 +1,17 @@
 const express = require("express");
-const { Client, GatewayIntentBits, Partials, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, EmbedBuilder, Events } = require("discord.js");
+const {
+  Client,
+  GatewayIntentBits,
+  Partials,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  EmbedBuilder,
+  Events,
+} = require("discord.js");
 require("dotenv").config();
 
 const app = express();
@@ -7,17 +19,19 @@ app.get("/", (req, res) => res.send("Bot is alive"));
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Serveur web lancé sur le port ${PORT}`));
 
-// ⏱️ Ping Render pour éviter l'extinction
+// Ping Render pour éviter la mise en veille
 setInterval(() => {
   require("http").get("https://TON-LIEN-RENDER.onrender.com");
 }, 5 * 60 * 1000);
 
+// IDs des salons
+const SIGNAL_CHANNEL_ID = "1378660736150011956"; // Salon avec le bouton
+const REPORT_CHANNEL_ID = "1378661323054776400"; // Salon où envoyer le rapport
+
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
-  partials: [Partials.Channel]
+  partials: [Partials.Channel],
 });
-
-const SIGNAL_CHANNEL_ID = "1378660736150011956";
 
 client.once("ready", async () => {
   console.log(`🤖 Connecté en tant que ${client.user.tag}`);
@@ -31,11 +45,13 @@ client.once("ready", async () => {
         .setStyle(ButtonStyle.Primary)
     );
 
-    await channel.send({ content: "**Signalez un comportement inapproprié via le formulaire ci-dessous :**", components: [button] });
+    await channel.send({
+      content: "**Signalez un comportement inapproprié via le formulaire ci-dessous :**",
+      components: [button],
+    });
   }
 });
 
-// Quand on clique sur le bouton
 client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.isButton() && interaction.customId === "open_report_modal") {
     const modal = new ModalBuilder()
@@ -76,7 +92,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await interaction.showModal(modal);
   }
 
-  // Quand le formulaire est soumis
   if (interaction.isModalSubmit() && interaction.customId === "report_form") {
     const accuse = interaction.fields.getTextInputValue("accuse");
     const crimes = interaction.fields.getTextInputValue("crimes");
@@ -95,9 +110,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
       .setFooter({ text: `Signalé par ${interaction.user.tag}` })
       .setTimestamp();
 
-    await interaction.reply({ content: "**📬 Votre signalement a été envoyé.**", ephemeral: true });
+    await interaction.reply({ content: "📬 Votre signalement a été envoyé.", ephemeral: true });
 
-    const reportChannel = await client.channels.fetch(SIGNAL_CHANNEL_ID);
+    const reportChannel = await client.channels.fetch(REPORT_CHANNEL_ID);
     if (reportChannel) {
       reportChannel.send({ embeds: [embed] });
     }
